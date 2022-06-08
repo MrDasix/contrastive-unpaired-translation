@@ -29,6 +29,9 @@ if __name__ == '__main__':
 
         dataset.set_epoch(epoch)
         for i, data in enumerate(dataset):  # inner loop within one epoch
+
+            # import pdb; pdb.set_trace()
+
             iter_start_time = time.time()  # timer for computation per iteration
             if total_iters % opt.print_freq == 0:
                 t_data = iter_start_time - iter_data_time
@@ -53,6 +56,7 @@ if __name__ == '__main__':
                 save_result = total_iters % opt.update_html_freq == 0
                 model.compute_visuals()
                 visualizer.display_current_results(model.get_current_visuals(), epoch, save_result)
+                # model.save_current_visuals(str(epoch_iter))
 
             if total_iters % opt.print_freq == 0:    # print training losses and save logging information to the disk
                 losses = model.get_current_losses()
@@ -67,6 +71,9 @@ if __name__ == '__main__':
                 model.save_networks(save_suffix)
 
             iter_data_time = time.time()
+
+            if i == 0:
+                model.get_external_val(epoch,data["val"],data["val_path"])
 
         if epoch % opt.save_epoch_freq == 0:              # cache our model every <save_epoch_freq> epochs
             print('saving the model at the end of epoch %d, iters %d' % (epoch, total_iters))

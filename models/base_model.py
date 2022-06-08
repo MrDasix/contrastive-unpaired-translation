@@ -1,8 +1,12 @@
 import os
+
+from numpy import imag
 import torch
 from collections import OrderedDict
 from abc import ABC, abstractmethod
 from . import networks
+import util.util as util
+import cv2
 
 
 class BaseModel(ABC):
@@ -152,6 +156,35 @@ class BaseModel(ABC):
             if isinstance(name, str):
                 visual_ret[name] = getattr(self, name)
         return visual_ret
+
+    def get_external_val(self, epoch, images, paths):
+        for image in zip(images,paths):
+            # import pdb;pdb.set_trace()
+            result = self.netG(image[0])
+
+            tmp_im = util.tensor2im(result)
+            tmp_im = cv2.cvtColor(tmp_im, cv2.COLOR_BGR2RGB)
+
+            path = ("/".join(image[1][0].split("/")[2:-1] + [str(epoch)]))
+            img_name = image[1][0].split("/")[-1]
+            name = opt.name
+
+            final_path = f"/output/{path}/{name}" 
+
+            if not os.path.exists(final_path):
+                os.makedirs(final_path)
+
+
+            cv2.imwrite(f"{final_path}/{img_name}",tmp_im)
+
+    def save_current_visuals(self, preName):
+        for name in self.visual_names:
+            if isinstance(name, str):
+                tmp = getattr(self, name)
+                tmp_im = util.tensor2im(tmp)
+                tmp_im = cv2.cvtColor(tmp_im, cv2.COLOR_BGR2RGB)
+                cv2.imwrite(f"/output/{preName}_{name}.png",tmp_im)
+
 
     def get_current_losses(self):
         """Return traning losses / errors. train.py will print out these errors on console, and save them to a file"""

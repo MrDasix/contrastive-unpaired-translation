@@ -1,6 +1,7 @@
 # install basic packages
 FROM pytorch/pytorch:1.10.0-cuda11.3-cudnn8-runtime
 RUN apt-get -qq update
+RUN apt-get install ffmpeg libsm6 libxext6  -y
 #RUN apt-get update
 #RUN apt-get install -qqy aptitude
 #RUN apt-get install -qqy screen

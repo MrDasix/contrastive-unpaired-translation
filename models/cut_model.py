@@ -4,6 +4,7 @@ from .base_model import BaseModel
 from . import networks
 from .patchnce import PatchNCELoss
 import util.util as util
+import cv2
 
 
 class CUTModel(BaseModel):
@@ -152,6 +153,7 @@ class CUTModel(BaseModel):
                 self.real = torch.flip(self.real, [3])
 
         self.fake = self.netG(self.real)
+
         self.fake_B = self.fake[:self.real_A.size(0)]
         if self.opt.nce_idt:
             self.idt_B = self.fake[self.real_A.size(0):]
