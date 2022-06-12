@@ -4,6 +4,7 @@ We modify the official PyTorch image folder (https://github.com/pytorch/vision/b
 so that this class can load images from both current directory and its subdirectories.
 """
 
+from turtle import pd
 import torch.utils.data as data
 
 from PIL import Image
@@ -21,15 +22,28 @@ def is_image_file(filename):
     return any(filename.endswith(extension) for extension in IMG_EXTENSIONS)
 
 
-def make_dataset(dir, max_dataset_size=float("inf")):
+def make_dataset(dir, max_dataset_size=float("inf"), img_file = None):
     images = []
     assert os.path.isdir(dir) or os.path.islink(dir), '%s is not a valid directory' % dir
 
-    for root, _, fnames in sorted(os.walk(dir, followlinks=True)):
-        for fname in fnames:
-            if is_image_file(fname):
-                path = os.path.join(root, fname)
-                images.append(path)
+
+    if img_file is not None:
+        assert os.path.isfile(os.path.join(dir, img_file)),  '%s is not a valid file' % img_file
+
+    if img_file is None:
+        for root, _, fnames in sorted(os.walk(dir, followlinks=True)):
+            for fname in fnames:
+                if is_image_file(fname):
+                    path = os.path.join(root, fname)
+                    images.append(path)
+    else:
+        with open(os.path.join(dir, img_file), "r") as f:
+            for file in f.read().split("\n"):
+                print(file)
+                if is_image_file(file):
+                    path = os.path.join(dir, file)
+                    images.append(path)
+
     return images[:min(max_dataset_size, len(images))]
 
 
@@ -40,8 +54,8 @@ def default_loader(path):
 class ImageFolder(data.Dataset):
 
     def __init__(self, root, transform=None, return_paths=False,
-                 loader=default_loader):
-        imgs = make_dataset(root)
+                 loader=default_loader, img_file = None):
+        imgs = make_dataset(root, img_file = img_file)
         if len(imgs) == 0:
             raise(RuntimeError("Found 0 images in: " + root + "\n"
                                "Supported image extensions are: " + ",".join(IMG_EXTENSIONS)))

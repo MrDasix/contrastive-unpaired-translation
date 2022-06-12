@@ -157,6 +157,19 @@ class BaseModel(ABC):
                 visual_ret[name] = getattr(self, name)
         return visual_ret
 
+    def compute_inference(self, data):
+        for image in data:
+            # import pdb;pdb.set_trace()
+            result = self.netG(image["img"])
+
+            tmp_im = util.tensor2im(result)
+            tmp_im = cv2.cvtColor(tmp_im, cv2.COLOR_BGR2RGB)
+
+            img_name = image["path"][0].split("/")[-1]
+            name = self.opt.name
+
+            util.save_image(tmp_im, f"/output/inference/{name}", img_name)
+
     def get_external_val(self, epoch, images, paths):
         for image in zip(images,paths):
             # import pdb;pdb.set_trace()
@@ -165,17 +178,11 @@ class BaseModel(ABC):
             tmp_im = util.tensor2im(result)
             tmp_im = cv2.cvtColor(tmp_im, cv2.COLOR_BGR2RGB)
 
-            path = ("/".join(image[1][0].split("/")[2:-1] + [str(epoch)]))
+            path = ("/".join(image[1][0].split("/")[2:-1]))
             img_name = image[1][0].split("/")[-1]
-            name = opt.name
+            name = self.opt.name
 
-            final_path = f"/output/{path}/{name}" 
-
-            if not os.path.exists(final_path):
-                os.makedirs(final_path)
-
-
-            cv2.imwrite(f"{final_path}/{img_name}",tmp_im)
+            util.save_image(tmp_im, f"/output/{path}/{name}/{str(epoch)}",img_name)
 
     def save_current_visuals(self, preName):
         for name in self.visual_names:

@@ -8,7 +8,7 @@ import importlib
 import argparse
 from argparse import Namespace
 import torchvision
-
+import cv2
 
 def str2bool(v):
     if isinstance(v, bool):
@@ -164,3 +164,10 @@ def correct_resize(t, size, mode=Image.BICUBIC):
         resized_t = torchvision.transforms.functional.to_tensor(one_image) * 2 - 1.0
         resized.append(resized_t)
     return torch.stack(resized, dim=0).to(device)
+
+
+def save_image(image, path, im_name):
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+    cv2.imwrite(f"{path}/{im_name}",image)
