@@ -4,7 +4,9 @@ from .base_model import BaseModel
 from . import networks
 from .patchnce import PatchNCELoss
 import util.util as util
-import cv2
+import os
+import time
+import json
 
 
 class CUTModel(BaseModel):
@@ -63,6 +65,9 @@ class CUTModel(BaseModel):
         self.visual_names = ['real_A', 'fake_B', 'real_B']
         self.nce_layers = [int(i) for i in self.opt.nce_layers.split(',')]
 
+        if opt.realism_loss:
+            self.loss_names += ['notReal']
+
         if opt.nce_idt and self.isTrain:
             self.loss_names += ['NCE_Y']
             self.visual_names += ['idt_B']
@@ -111,6 +116,57 @@ class CUTModel(BaseModel):
                 self.optimizer_F = torch.optim.Adam(self.netF.parameters(), lr=self.opt.lr, betas=(self.opt.beta1, self.opt.beta2))
                 self.optimizers.append(self.optimizer_F)
 
+    def realism_loss(self, epoch):
+        img_path = os.path.join(self.save_dir,"external_val", str(epoch))
+
+        # com = f"""python ../descriptor2.0/main.py --test --task classify \
+        # --config ../descriptor2.0/configs/classify/synthetic_or_real/4w_vehicle/classifier-mobileNet.yaml \
+        # --checkpoint_path /output/classify/4w_vehicle-desc-mobileNet/vehicle_SoR/Jun28_09-16-31_lola/checkpoint-step-35000.pth \
+        # --img_path  {img_path}\
+        # --output_path {img_path}""" 
+
+        com = f"""python ../descriptor2.0/main.py --test --task classify \
+        --config ../descriptor2.0/configs/classify/synthetic_or_real/4w_vehicle/classifier-mobileNet.yaml \
+        --checkpoint_path /output/classify/4w_vehicle-desc-mobileNet/vehicle_RoNR/Jul13_12-45-18_lola/final-checkpoint-step-125890.pth \
+        --img_path  {img_path}\
+        --output_path {img_path}""" 
+
+        os.system(com)
+
+        with open(os.path.join(img_path, "predictions.json")) as pred:
+            pred = json.load(pred)
+
+        # self.loss_synthetic = sum([val["4w_vehicle_SoR"][0] for val in pred.values()]) / len(pred)
+        self.loss_notReal = sum([val["4w_vehicle_RoNR"][0] for val in pred.values()]) / len(pred)
+        # import pdb; pdb.set_trace()
+
+    def compute_gradients(self):
+        # forward
+        self.forward()
+
+        # update D
+        self.set_requires_grad(self.netD, True)
+        self.loss_D = self.compute_D_loss()
+        self.loss_D.backward()
+
+        # update G
+        self.set_requires_grad(self.netD, False)
+        self.loss_G = self.compute_G_loss()
+        self.loss_G.backward()
+    
+    def change_weights(self):        
+        self.optimizer_D.step()
+        self.optimizer_D.zero_grad()
+        
+        self.optimizer_G.step()
+        if self.opt.netF == 'mlp_sample':
+            self.optimizer_F.step()
+            
+        self.optimizer_G.zero_grad()
+        if self.opt.netF == 'mlp_sample':
+            self.optimizer_F.zero_grad()
+
+
     def optimize_parameters(self):
         # forward
         self.forward()
@@ -132,6 +188,7 @@ class CUTModel(BaseModel):
         self.optimizer_G.step()
         if self.opt.netF == 'mlp_sample':
             self.optimizer_F.step()
+
 
     def set_input(self, input):
         """Unpack input data from the dataloader and perform necessary pre-processing steps.

@@ -42,4 +42,3 @@ rm:
 clean:
 	@docker image rm ${DOCKER_PIPELINE_NAME}
 
-

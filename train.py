@@ -1,4 +1,5 @@
 import time
+from turtle import pd
 import torch
 from options.train_options import TrainOptions
 from data import create_dataset
@@ -7,6 +8,8 @@ from util.visualizer import Visualizer
 
 
 if __name__ == '__main__':
+    torch.cuda.empty_cache()
+
     opt = TrainOptions().parse()   # get training options
     dataset = create_dataset(opt)  # create a dataset given opt.dataset_mode and other options
     dataset_size = len(dataset)    # get the number of images in the dataset.
@@ -29,7 +32,6 @@ if __name__ == '__main__':
 
         dataset.set_epoch(epoch)
         for i, data in enumerate(dataset):  # inner loop within one epoch
-
             # import pdb; pdb.set_trace()
 
             iter_start_time = time.time()  # timer for computation per iteration
@@ -46,8 +48,18 @@ if __name__ == '__main__':
                 model.data_dependent_initialize(data)
                 model.setup(opt)               # regular setup: load and print networks; create schedulers
                 model.parallelize()
+
             model.set_input(data)  # unpack data from dataset and apply preprocessing
             model.optimize_parameters()   # calculate loss functions, get gradients, update network weights
+
+
+            # model.compute_gradients()
+
+            # if total_iters % opt.custom_batch_size == 0:
+            #     print("----------------------- OPTMIZE WEIGHTS --------------------------", i, len(dataset))
+            #     model.change_weights()
+                
+
             if len(opt.gpu_ids) > 0:
                 torch.cuda.synchronize()
             optimize_time = (time.time() - optimize_start_time) / batch_size * 0.005 + 0.995 * optimize_time
@@ -58,11 +70,17 @@ if __name__ == '__main__':
                 visualizer.display_current_results(model.get_current_visuals(), epoch, save_result)
                 # model.save_current_visuals(str(epoch_iter))
 
-            if total_iters % opt.print_freq == 0:    # print training losses and save logging information to the disk
-                losses = model.get_current_losses()
-                visualizer.print_current_losses(epoch, epoch_iter, losses, optimize_time, t_data)
-                if opt.display_id is None or opt.display_id > 0:
-                    visualizer.plot_current_losses(epoch, float(epoch_iter) / dataset_size, losses)
+            # if total_iters % opt.print_freq == 0:    # print training losses and save logging information to the disk                
+            #     model.get_external_val(epoch,data["val"],data["val_path"])
+
+            #     if opt.realism_loss:
+            #         model.realism_loss(epoch)
+
+            #     losses = model.get_current_losses()
+
+            #     visualizer.print_current_losses(epoch, epoch_iter, losses, optimize_time, t_data)
+            #     if opt.display_id is None or opt.display_id > 0:
+            #         visualizer.plot_current_losses(epoch, float(epoch_iter) / dataset_size, losses)
 
             if total_iters % opt.save_latest_freq == 0:   # cache our latest model every <save_latest_freq> iterations
                 print('saving the latest model (epoch %d, total_iters %d)' % (epoch, total_iters))
@@ -70,15 +88,24 @@ if __name__ == '__main__':
                 save_suffix = 'iter_%d' % total_iters if opt.save_by_iter else 'latest'
                 model.save_networks(save_suffix)
 
-            iter_data_time = time.time()
-
-            if i == 0:
-                model.get_external_val(epoch,data["val"],data["val_path"])
+            iter_data_time = time.time()                
 
         if epoch % opt.save_epoch_freq == 0:              # cache our model every <save_epoch_freq> epochs
             print('saving the model at the end of epoch %d, iters %d' % (epoch, total_iters))
             model.save_networks('latest')
             model.save_networks(epoch)
+
+            model.get_external_val(epoch,data["val"],data["val_path"])
+
+            if opt.realism_loss:
+                model.realism_loss(epoch)
+
+            losses = model.get_current_losses()
+
+            visualizer.print_current_losses(epoch, epoch_iter, losses, optimize_time, t_data)
+            if opt.display_id is None or opt.display_id > 0:
+                visualizer.plot_current_losses(epoch, float(epoch_iter) / dataset_size, losses)
+            
 
         print('End of epoch %d / %d \t Time Taken: %d sec' % (epoch, opt.n_epochs + opt.n_epochs_decay, time.time() - epoch_start_time))
         model.update_learning_rate()                     # update learning rates at the end of every epoch.

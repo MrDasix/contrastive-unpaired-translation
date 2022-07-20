@@ -157,18 +157,35 @@ class BaseModel(ABC):
                 visual_ret[name] = getattr(self, name)
         return visual_ret
 
+    # https://discuss.pytorch.org/t/why-do-we-need-to-set-the-gradients-manually-to-zero-in-pytorch/4903/20?u=alband
+
+    @abstractmethod
+    def change_weights(self):
+        """Change the weight. Step method of optimizer and zer_grad()"""
+        pass
+
+    @abstractmethod
+    def compute_gradients(self):
+        """Compute and aggregate the gradients"""
+        pass
+
     def compute_inference(self, data):
         for image in data:
-            # import pdb;pdb.set_trace()
+            
+            print("Apply to image:", image["path"][0][len(self.opt.dataroot):])
+
             result = self.netG(image["img"])
 
             tmp_im = util.tensor2im(result)
-            tmp_im = cv2.cvtColor(tmp_im, cv2.COLOR_BGR2RGB)
+            # tmp_im = cv2.cvtColor(tmp_im, cv2.COLOR_BGR2RGB)
 
-            img_name = image["path"][0].split("/")[-1]
-            name = self.opt.name
+            img_name = "-".join(image["path"][0][len(self.opt.dataroot):].split("/"))
 
-            util.save_image(tmp_im, f"/output/inference/{name}", img_name)
+            save_path = os.path.join(self.save_dir,f"inference_{self.opt.epoch}", img_name)
+
+            print("Saving to:", save_path)
+
+            util.save_image(tmp_im, save_path)
 
     def get_external_val(self, epoch, images, paths):
         for image in zip(images,paths):
@@ -176,22 +193,11 @@ class BaseModel(ABC):
             result = self.netG(image[0])
 
             tmp_im = util.tensor2im(result)
-            tmp_im = cv2.cvtColor(tmp_im, cv2.COLOR_BGR2RGB)
+            # tmp_im = cv2.cvtColor(tmp_im, cv2.COLOR_BGR2RGB)
 
-            path = ("/".join(image[1][0].split("/")[2:-1]))
             img_name = image[1][0].split("/")[-1]
-            name = self.opt.name
-
-            util.save_image(tmp_im, f"/output/{path}/{name}/{str(epoch)}",img_name)
-
-    def save_current_visuals(self, preName):
-        for name in self.visual_names:
-            if isinstance(name, str):
-                tmp = getattr(self, name)
-                tmp_im = util.tensor2im(tmp)
-                tmp_im = cv2.cvtColor(tmp_im, cv2.COLOR_BGR2RGB)
-                cv2.imwrite(f"/output/{preName}_{name}.png",tmp_im)
-
+            
+            util.save_image(tmp_im, os.path.join(self.save_dir,"external_val", str(epoch), img_name))
 
     def get_current_losses(self):
         """Return traning losses / errors. train.py will print out these errors on console, and save them to a file"""

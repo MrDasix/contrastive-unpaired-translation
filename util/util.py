@@ -98,6 +98,10 @@ def save_image(image_numpy, image_path, aspect_ratio=1.0):
         image_pil = image_pil.resize((h, int(w * aspect_ratio)), Image.BICUBIC)
     elif aspect_ratio < 1.0:
         image_pil = image_pil.resize((int(h / aspect_ratio), w), Image.BICUBIC)
+
+    path = "/".join(image_path.split("/")[:-1])
+    mkdir(path)
+
     image_pil.save(image_path)
 
 
@@ -164,10 +168,3 @@ def correct_resize(t, size, mode=Image.BICUBIC):
         resized_t = torchvision.transforms.functional.to_tensor(one_image) * 2 - 1.0
         resized.append(resized_t)
     return torch.stack(resized, dim=0).to(device)
-
-
-def save_image(image, path, im_name):
-    if not os.path.exists(path):
-        os.makedirs(path)
-
-    cv2.imwrite(f"{path}/{im_name}",image)

@@ -26,6 +26,7 @@ def make_dataset(dir, max_dataset_size=float("inf"), img_file = None):
     images = []
     assert os.path.isdir(dir) or os.path.islink(dir), '%s is not a valid directory' % dir
 
+    # import pdb; pdb.set_trace()
 
     if img_file is not None:
         assert os.path.isfile(os.path.join(dir, img_file)),  '%s is not a valid file' % img_file
@@ -39,10 +40,11 @@ def make_dataset(dir, max_dataset_size=float("inf"), img_file = None):
     else:
         with open(os.path.join(dir, img_file), "r") as f:
             for file in f.read().split("\n"):
-                print(file)
                 if is_image_file(file):
                     path = os.path.join(dir, file)
                     images.append(path)
+
+    print("Number of files:", len(images))
 
     return images[:min(max_dataset_size, len(images))]
 

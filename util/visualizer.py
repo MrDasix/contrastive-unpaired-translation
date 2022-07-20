@@ -207,7 +207,7 @@ class Visualizer():
         plot_data = self.plot_data[plot_name]
         plot_id = list(self.plot_data.keys()).index(plot_name)
 
-        plot_data['X'].append(epoch + counter_ratio)
+        plot_data['X'].append(epoch-1 + counter_ratio)
         plot_data['Y'].append([losses[k] for k in plot_data['legend']])
         try:
             self.vis.line(
@@ -235,7 +235,7 @@ class Visualizer():
         """
         message = '(epoch: %d, iters: %d, time: %.3f, data: %.3f) ' % (epoch, iters, t_comp, t_data)
         for k, v in losses.items():
-            message += '%s: %.3f ' % (k, v)
+            message += '%s: %.5f ' % (k, v)
 
         print(message)  # print the message
         with open(self.log_name, "a") as log_file:

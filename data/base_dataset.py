@@ -66,9 +66,9 @@ def get_params(opt, size):
     new_h = h
     new_w = w
     if opt.preprocess == 'resize_and_crop':
-        # new_h = new_w = opt.load_size
-        new_h = opt.load_size_y
-        new_w = opt.load_size_x
+        new_h = new_w = opt.load_size
+        # new_h = opt.load_size_y
+        # new_w = opt.load_size_x
     elif opt.preprocess == 'scale_width_and_crop':
         new_w = opt.load_size
         new_h = opt.load_size * h // w
@@ -81,15 +81,16 @@ def get_params(opt, size):
     return {'crop_pos': (x, y), 'flip': flip}
 
 
-def get_transform(opt, params=None, grayscale=False, method=Image.BICUBIC, convert=True):
+def get_transform(opt, params=None, grayscale=False, method=Image.BILINEAR, convert=True):
+
     transform_list = []
-    if grayscale:
+    if opt.grayscale:
         transform_list.append(transforms.Grayscale(1))
     if 'fixsize' in opt.preprocess:
         transform_list.append(transforms.Resize(params["size"], method))
     if 'resize' in opt.preprocess:
-        # osize = [opt.load_size, opt.load_size]
-        osize = [opt.load_size_y, opt.load_size_x]
+        osize = [opt.load_size, opt.load_size]
+        # osize = [opt.load_size_y, opt.load_size_x]
         if "gta2cityscapes" in opt.dataroot:
             osize[0] = opt.load_size // 2
         transform_list.append(transforms.Resize(osize, method))
@@ -127,7 +128,7 @@ def get_transform(opt, params=None, grayscale=False, method=Image.BICUBIC, conve
 
     if convert:
         transform_list += [transforms.ToTensor()]
-        if grayscale:
+        if opt.grayscale:
             transform_list += [transforms.Normalize((0.5,), (0.5,))]
         else:
             transform_list += [transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]

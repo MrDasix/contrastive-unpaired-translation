@@ -16,6 +16,21 @@ class UnalignedDataset(BaseDataset):
     Similarly, you need to prepare two directories:
     '/path/to/data/testA' and '/path/to/data/testB' during test time.
     """
+    @staticmethod
+    def modify_commandline_options(parser, is_train):
+        """Add new dataset-specific options, and rewrite default values for existing options.
+
+        Parameters:
+            parser          -- original option parser
+            is_train (bool) -- whether training phase or test phase. You can use this flag to add training-specific or test-specific options.
+
+        Returns:
+            the modified parser.
+        """
+        parser.add_argument('--trainA_images', default=None, help='image file containing all the paths to trainA images. Needs to be combined with dataroot')
+        parser.add_argument('--trainB_images', default=None, help='image file containing all the paths to trainB images. Needs to be combined with dataroot')
+        parser.add_argument('--trainC_images', default=None, help='image file containing all the paths to trainC images. Needs to be combined with dataroot')
+        return parser
 
     def __init__(self, opt):
         """Initialize this dataset class.
@@ -26,18 +41,31 @@ class UnalignedDataset(BaseDataset):
             opt (Option class) -- stores all the experiment flags; needs to be a subclass of BaseOptions
         """
         BaseDataset.__init__(self, opt)
-        self.dir_A = os.path.join(opt.dataroot, opt.phase + 'A')  # create a path '/path/to/data/trainA'
-        self.dir_B = os.path.join(opt.dataroot, opt.phase + 'B')  # create a path '/path/to/data/trainB'
-        self.dir_C = os.path.join(opt.dataroot, opt.phase + 'C')  # create a path '/path/to/data/trainC'
+
+        if opt.trainA_images is None:
+            self.dir_A = os.path.join(opt.dataroot, opt.phase + 'A')  # create a path '/path/to/data/trainA'
+        else:
+            self.dir_A = opt.dataroot
+
+        if opt.trainB_images is None:
+            self.dir_B = os.path.join(opt.dataroot, opt.phase + 'B')  # create a path '/path/to/data/trainB'
+        else:
+            self.dir_B = opt.dataroot
+
+        if opt.trainC_images is None:
+            self.dir_C = os.path.join(opt.dataroot, opt.phase + 'C')  # create a path '/path/to/data/trainC'
+        else:
+            self.dir_C = opt.dataroot
 
         if opt.phase == "test" and not os.path.exists(self.dir_A) \
            and os.path.exists(os.path.join(opt.dataroot, "valA")):
             self.dir_A = os.path.join(opt.dataroot, "valA")
             self.dir_B = os.path.join(opt.dataroot, "valB")
 
-        self.A_paths = sorted(make_dataset(self.dir_A, opt.max_dataset_size))   # load images from '/path/to/data/trainA'
-        self.B_paths = sorted(make_dataset(self.dir_B, opt.max_dataset_size))    # load images from '/path/to/data/trainB'
-        self.C_paths = sorted(make_dataset(self.dir_C, opt.max_dataset_size))    # load images from '/path/to/data/trainC'
+        self.A_paths = sorted(make_dataset(self.dir_A, opt.max_dataset_size, img_file = opt.trainA_images))   # load images from '/path/to/data/trainA'
+        self.B_paths = sorted(make_dataset(self.dir_B, opt.max_dataset_size, img_file = opt.trainB_images))    # load images from '/path/to/data/trainB'
+        self.C_paths = sorted(make_dataset(self.dir_C, opt.max_dataset_size, img_file = opt.trainC_images))    # load images from '/path/to/data/trainC'
+
         self.A_size = len(self.A_paths)  # get the size of dataset A
         self.B_size = len(self.B_paths)  # get the size of dataset B
         self.C_size = len(self.C_paths)  # get the size of dataset C
@@ -50,7 +78,7 @@ class UnalignedDataset(BaseDataset):
             C_img = Image.open(C_path).convert('RGB')
 
             is_finetuning = self.opt.isTrain and self.current_epoch > self.opt.n_epochs
-            modified_opt = util.copyconf(self.opt, load_size=self.opt.crop_size if is_finetuning else self.opt.load_size)
+            modified_opt = util.copyconf(self.opt, load_size=self.opt.crop_size) #Allways original size
             transform = get_transform(modified_opt)
 
             self.external_val.append(transform(C_img))
