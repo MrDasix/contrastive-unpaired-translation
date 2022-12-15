@@ -196,7 +196,7 @@ class BaseModel(ABC):
             # tmp_im = cv2.cvtColor(tmp_im, cv2.COLOR_BGR2RGB)
 
             img_name = image[1][0].split("/")[-1]
-            
+
             util.save_image(tmp_im, os.path.join(self.save_dir,"external_val", str(epoch), img_name))
 
     def get_current_losses(self):

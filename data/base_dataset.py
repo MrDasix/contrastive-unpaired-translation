@@ -66,9 +66,9 @@ def get_params(opt, size):
     new_h = h
     new_w = w
     if opt.preprocess == 'resize_and_crop':
-        new_h = new_w = opt.load_size
-        # new_h = opt.load_size_y
-        # new_w = opt.load_size_x
+        # new_h = new_w = opt.load_size
+        new_h = opt.load_size_y
+        new_w = opt.load_size_x
     elif opt.preprocess == 'scale_width_and_crop':
         new_w = opt.load_size
         new_h = opt.load_size * h // w
@@ -89,8 +89,8 @@ def get_transform(opt, params=None, grayscale=False, method=Image.BILINEAR, conv
     if 'fixsize' in opt.preprocess:
         transform_list.append(transforms.Resize(params["size"], method))
     if 'resize' in opt.preprocess:
-        osize = [opt.load_size, opt.load_size]
-        # osize = [opt.load_size_y, opt.load_size_x]
+        # osize = [opt.load_size, opt.load_size]
+        osize = [opt.load_size_y, opt.load_size_x]
         if "gta2cityscapes" in opt.dataroot:
             osize[0] = opt.load_size // 2
         transform_list.append(transforms.Resize(osize, method))
@@ -106,6 +106,7 @@ def get_transform(opt, params=None, grayscale=False, method=Image.BILINEAR, conv
             transform_list.append(transforms.Lambda(lambda img: __random_zoom(img, opt.load_size, opt.crop_size, method, factor=params["scale_factor"])))
 
     if 'crop' in opt.preprocess:
+        import pdb; pdb.set_trace()
         if params is None or 'crop_pos' not in params:
             transform_list.append(transforms.RandomCrop(opt.crop_size))
         else:

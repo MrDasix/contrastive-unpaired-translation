@@ -16,20 +16,14 @@ build:
 
 ## Run bash terminal
 bash:
-	@if [ -z "${DATA_DIR}" ]; then \
-		echo "DATA_DIR not found. Please set environment variable or pass as argument"; \
-	elif [ -z "${OUT_DIR}" ]; then \
-		echo "OUT_DIR not found. Please set environment variable or pass as argument"; \
-	else \
-		make build; \
-		docker run --name ${PIPELINE_CONTAINER_NAME} --network=host --shm-size 8G \
-		--gpus all -e NVIDIA_DRIVER_CAPABILITIES=all \
-		-v ${ROOT_DIR}:/home/docker_cut \
-		-v ${DATA_DIR}:/dataset \
-		-v ${OUT_DIR}:/output \
-		-it ${DOCKER_PIPELINE_NAME} bash; \
-		make rm; \
-	fi	
+	make build; \
+	docker run --name ${PIPELINE_CONTAINER_NAME} --network=host --shm-size 8G \
+	--gpus all -e NVIDIA_DRIVER_CAPABILITIES=all \
+	-v ${ROOT_DIR}:/home/docker_cut \
+	-v /nash/datasets/private/vintra_synth_licenseplate:/dataset \
+    -v /nash/datasets/public/CCPD2019:/dataset/CCPD \
+	-it ${DOCKER_PIPELINE_NAME} bash; \
+	make rm; \
 # GPU constraints (from Sergio's script)
 # @docker run --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=${GPU_ID} \
 # --shm-size=1g --ulimit memlock=-1 --ulimit stack=67108864 \

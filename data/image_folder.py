@@ -44,7 +44,7 @@ def make_dataset(dir, max_dataset_size=float("inf"), img_file = None):
                     path = os.path.join(dir, file)
                     images.append(path)
 
-    print("Number of files:", len(images))
+    print("Total Number of files found:", len(images), "Getting only:",min(max_dataset_size, len(images)))
 
     return images[:min(max_dataset_size, len(images))]
 
